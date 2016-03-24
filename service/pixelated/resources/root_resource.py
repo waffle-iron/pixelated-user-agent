@@ -40,10 +40,10 @@ MODE_RUNNING = 2
 
 
 class RootResource(BaseResource):
-    def __init__(self, services_factory):
+    def __init__(self, services_factory, static_folder=None):
         BaseResource.__init__(self, services_factory)
         self._startup_assets_folder = self._get_startup_folder()
-        self._static_folder = self._get_static_folder()
+        self._static_folder = static_folder or self._get_static_folder()
         self._html_template = open(os.path.join(self._static_folder, 'index.html')).read()
         self._services_factory = services_factory
         self._child_resources = ChildResourcesMap()
