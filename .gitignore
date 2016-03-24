@@ -35,3 +35,6 @@ pixelated.cfg
 service/_trial_temp/
 _trial_temp
 web-ui/coverage
+web-ui/pixelated_www/*
+web-ui/build/*
+!web-ui/pixelated_www/__init__.py
