@@ -153,7 +153,6 @@ locks = [Lock() for i in range(1, 50)]
 
 
 def lockfunc(mode, n, file, line):
-    print 'inside lockfunc\n'
     print 'mode: %d and n %d\n' % (mode, n)
     if mode & CRYPTO_LOCK == CRYPTO_LOCK:
         print "acquire lock %d" % n

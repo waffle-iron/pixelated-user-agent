@@ -3,16 +3,11 @@
 #include "openssl/crypto.h"
 #include "stdio.h"
 
-static PyObject *SpamError;
-
 static PyObject *IdCallback;
 static PyObject *LockingCallback;
 
 
-//--------------------------
-
-static void locking_function(int mode, int n, const char *file, int line)
-{
+static void locking_function(int mode, int n, const char *file, int line) {
   PyObject *arglist;
   PyObject *result;
 
@@ -21,11 +16,9 @@ static void locking_function(int mode, int n, const char *file, int line)
 
   printf("Enter locking_function\n");
   printf("mode %i n %i file %s und line %i \n", mode, n, file, line);
-  printf("print something \n");
   arglist = Py_BuildValue("iisi", mode, n, file, line);
   printf("did not break on build arglist: %p, %p\n", LockingCallback, arglist);
   result = PyObject_CallObject(LockingCallback, arglist);
-  printf("result\n");
   printf("result: %p\n", result);
 
   Py_DECREF(arglist);
@@ -36,8 +29,8 @@ static void locking_function(int mode, int n, const char *file, int line)
   printf("Leave locking_function\n");
 }
 
-static unsigned long id_function(void)
-{
+
+static unsigned long id_function(void) {
     PyObject *arglist;
     PyObject *result;
     int value;
@@ -63,27 +56,6 @@ static unsigned long id_function(void)
 }
 
 
-
-//--------------------------
-
-
-
-static PyObject *
-spam_system(PyObject *self, PyObject *args)
-{
-    const char *command;
-    int sts;
-
-    if (!PyArg_ParseTuple(args, "s", &command))
-        return NULL;
-    sts = system(command);
-    if (sts < 0) {
-        PyErr_SetString(SpamError, "System command failed");
-        return NULL;
-    }
-    return PyLong_FromLong(sts);
-}
-
 static PyObject * enable_mutexes(PyObject *self, PyObject *args) {
     PyObject *pIdCallback, *pLockingCallback;
 
@@ -105,21 +77,16 @@ static PyObject * enable_mutexes(PyObject *self, PyObject *args) {
 
 
 static PyMethodDef SpamMethods[] = {
-    {"system",  spam_system, METH_VARARGS,
-     "Execute a shell command."},
     {"enable_mutexes", enable_mutexes, METH_VARARGS,
      "Enable mutexes for openssl"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
 
-PyMODINIT_FUNC
-initfoobar(void)
-{
+PyMODINIT_FUNC initfoobar(void) {
     if (! PyEval_ThreadsInitialized()) {
         PyEval_InitThreads();
     }
 
     (void) Py_InitModule("foobar", SpamMethods);
-
 }
