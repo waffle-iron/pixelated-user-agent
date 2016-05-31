@@ -42,6 +42,10 @@ static unsigned long id_function(void)
     PyObject *result;
     int value;
 
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+
+
     printf("Enter id_function\n");
 
     arglist = Py_BuildValue(NULL);
@@ -52,6 +56,8 @@ static unsigned long id_function(void)
 
     Py_DECREF(arglist);
     Py_DECREF(result);
+
+    PyGILState_Release(gstate);
 
     return ((unsigned long)value);
 }
