@@ -11,25 +11,29 @@ static PyObject *LockingCallback;
 
 //--------------------------
 
-static void locking_function(int mode, int n, const char * file, int line)
+static void locking_function(int mode, int n, const char *file, int line)
 {
   PyObject *arglist;
   PyObject *result;
 
-  printf("Enter locking_function\n");
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
 
-  arglist = Py_BuildValue("(i, i, s, i)", mode, n, file, line);
+  printf("Enter locking_function\n");
+  printf("mode %i n %i file %s und line %i \n", mode, n, file, line);
+  printf("print something \n");
+  arglist = Py_BuildValue("iisi", mode, n, file, line);
+  printf("did not break on build arglist: %p, %p\n", LockingCallback, arglist);
   result = PyObject_CallObject(LockingCallback, arglist);
-//  if(mode & CRYPTO_LOCK)
-//
-//    result = PyObject_CallObject(IdCallback, arglist);
-//  else
-//    a--;
+  printf("result\n");
+  printf("result: %p\n", result);
 
   Py_DECREF(arglist);
-    Py_DECREF(result);
+  Py_DECREF(result);
 
-    printf("Leave locking_function\n");
+  PyGILState_Release(gstate);
+
+  printf("Leave locking_function\n");
 }
 
 static unsigned long id_function(void)
@@ -37,6 +41,8 @@ static unsigned long id_function(void)
     PyObject *arglist;
     PyObject *result;
     int value;
+
+    printf("Enter id_function\n");
 
     arglist = Py_BuildValue(NULL);
     result = PyObject_CallObject(IdCallback, arglist);
@@ -78,6 +84,8 @@ static PyObject * enable_mutexes(PyObject *self, PyObject *args) {
     if (!PyArg_UnpackTuple(args, "enable_mutexes", 2, 2, &pIdCallback, &pLockingCallback)) {
 		return NULL;
 	}
+	Py_INCREF(pIdCallback);
+	Py_INCREF(pLockingCallback);
 	IdCallback = pIdCallback;
 	LockingCallback = pLockingCallback;
 
@@ -102,5 +110,10 @@ static PyMethodDef SpamMethods[] = {
 PyMODINIT_FUNC
 initfoobar(void)
 {
+    if (! PyEval_ThreadsInitialized()) {
+        PyEval_InitThreads();
+    }
+
     (void) Py_InitModule("foobar", SpamMethods);
+
 }
