@@ -29,7 +29,6 @@ static void locking_function(int mode, int n, const char *file, int line) {
   printf("Leave locking_function\n");
 }
 
-
 static unsigned long id_function(void) {
     PyObject *arglist;
     PyObject *result;
@@ -47,12 +46,23 @@ static unsigned long id_function(void) {
     if (!PyArg_ParseTuple(result, "i", &value))
        return 0;
 
+    printf("obtained id: %i\n", value);
+
     Py_DECREF(arglist);
     Py_DECREF(result);
 
     PyGILState_Release(gstate);
 
+    printf("Leave id_function\n");
+
     return ((unsigned long)value);
+}
+
+
+void threadid_function(CRYPTO_THREADID* id) {
+    printf("Enter threadid\n");
+    CRYPTO_THREADID_set_numeric(id, (unsigned long) id_function());
+    printf("Leave threadid\n");
 }
 
 
@@ -67,7 +77,7 @@ static PyObject * enable_mutexes(PyObject *self, PyObject *args) {
 	IdCallback = pIdCallback;
 	LockingCallback = pLockingCallback;
 
-    CRYPTO_set_id_callback(id_function);
+    CRYPTO_THREADID_set_callback(threadid_function);
     CRYPTO_set_locking_callback(locking_function);
 
     printf("Enabled mutexes\n");
