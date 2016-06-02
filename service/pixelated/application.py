@@ -147,6 +147,7 @@ CRYPTO_WRITE=8
 def idfunc():
     id = current_thread().ident
     print 'sent thread id:  %d' % id
+    print type(id)
     return int(id)
 
 locks = [Lock() for i in range(1, 50)]

@@ -32,7 +32,7 @@ static void locking_function(int mode, int n, const char *file, int line) {
 static unsigned long id_function(void) {
     PyObject *arglist;
     PyObject *result;
-    long  value;
+    unsigned long  value;
 
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -45,12 +45,12 @@ static unsigned long id_function(void) {
 
     printf("not breaking: %p\n", result);
 
-    value = PyInt_AsLong(result);
+    value = PyInt_AsUnsignedLongMask(result);
    // if (!PyArg_ParseTuple(result, "i", &value))
    //    return 0;
 
     printf("id got a value \n");
-    printf("obtained id: %i\n", value);
+    printf("obtained id: %lu\n", value);
 
     Py_DECREF(arglist);
     Py_DECREF(result);
