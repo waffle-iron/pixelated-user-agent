@@ -38,7 +38,7 @@ from pixelated.resources.root_resource import RootResource
 
 log = logging.getLogger(__name__)
 
-from multiprocessing import Lock
+from threading import RLock as Lock
 from threading import current_thread
 import foobar
 
@@ -146,14 +146,14 @@ CRYPTO_WRITE=8
 
 def idfunc():
     id = current_thread().ident
-    print 'thread id  %d' % id
-    return id
+    print 'sent thread id:  %d' % id
+    return int(id)
 
 locks = [Lock() for i in range(1, 50)]
 
 
 def lockfunc(mode, n, file, line):
-    print 'mode: %d and n %d\n' % (mode, n)
+    print 'mode: %d and n %d' % (mode, n)
     if mode & CRYPTO_LOCK == CRYPTO_LOCK:
         print "acquire lock %d" % n
         locks[n].acquire()

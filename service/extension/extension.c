@@ -26,13 +26,13 @@ static void locking_function(int mode, int n, const char *file, int line) {
 
   PyGILState_Release(gstate);
 
-  printf("Leave locking_function\n");
+  printf("Leave locking_function\n\n");
 }
 
 static unsigned long id_function(void) {
     PyObject *arglist;
     PyObject *result;
-    int value;
+    long  value;
 
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -40,12 +40,16 @@ static unsigned long id_function(void) {
 
     printf("Enter id_function\n");
 
-    arglist = Py_BuildValue(NULL);
+    arglist = Py_BuildValue("()");
     result = PyObject_CallObject(IdCallback, arglist);
 
-    if (!PyArg_ParseTuple(result, "i", &value))
-       return 0;
+    printf("not breaking: %p\n", result);
 
+    value = PyInt_AsLong(result);
+   // if (!PyArg_ParseTuple(result, "i", &value))
+   //    return 0;
+
+    printf("id got a value \n");
     printf("obtained id: %i\n", value);
 
     Py_DECREF(arglist);
@@ -62,7 +66,7 @@ static unsigned long id_function(void) {
 void threadid_function(CRYPTO_THREADID* id) {
     printf("Enter threadid\n");
     CRYPTO_THREADID_set_numeric(id, (unsigned long) id_function());
-    printf("Leave threadid\n");
+    printf("Leave threadid\n\n");
 }
 
 
