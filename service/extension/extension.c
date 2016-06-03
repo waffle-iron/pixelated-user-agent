@@ -7,7 +7,7 @@ static PyObject *IdCallback;
 static PyObject *LockingCallback;
 
 
-static void locking_function(int mode, int n, const char *file, int line) {
+static void locking_callback_function(int mode, int n, const char *file, int line) {
   PyObject *arglist;
   PyObject *result;
 
@@ -29,7 +29,7 @@ static void locking_function(int mode, int n, const char *file, int line) {
   printf("Leave locking_function\n\n");
 }
 
-static unsigned long id_function(void) {
+static unsigned long get_thread_id(void) {
     PyObject *arglist;
     PyObject *result;
     unsigned long  value;
@@ -63,9 +63,9 @@ static unsigned long id_function(void) {
 }
 
 
-void threadid_function(CRYPTO_THREADID* id) {
+void threadid_callback_function(CRYPTO_THREADID* id) {
     printf("Enter threadid\n");
-    CRYPTO_THREADID_set_numeric(id, (unsigned long) id_function());
+    CRYPTO_THREADID_set_numeric(id, (unsigned long) get_thread_id());
     printf("Leave threadid\n\n");
 }
 
@@ -76,13 +76,13 @@ static PyObject * enable_mutexes(PyObject *self, PyObject *args) {
     if (!PyArg_UnpackTuple(args, "enable_mutexes", 2, 2, &pIdCallback, &pLockingCallback)) {
 		return NULL;
 	}
-	Py_INCREF(pIdCallback);
-	Py_INCREF(pLockingCallback);
-	IdCallback = pIdCallback;
-	LockingCallback = pLockingCallback;
+    Py_INCREF(pIdCallback);
+    Py_INCREF(pLockingCallback);
+    IdCallback = pIdCallback;
+    LockingCallback = pLockingCallback;
 
-    CRYPTO_THREADID_set_callback(threadid_function);
-    CRYPTO_set_locking_callback(locking_function);
+    CRYPTO_THREADID_set_callback(threadid_callback_function);
+    CRYPTO_set_locking_callback(locking_callback_function);
 
     printf("Enabled mutexes\n");
 
@@ -90,7 +90,7 @@ static PyObject * enable_mutexes(PyObject *self, PyObject *args) {
 }
 
 
-static PyMethodDef SpamMethods[] = {
+static PyMethodDef threadConfigs[] = {
     {"enable_mutexes", enable_mutexes, METH_VARARGS,
      "Enable mutexes for openssl"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
@@ -102,5 +102,5 @@ PyMODINIT_FUNC initopenssl_thread_config(void) {
         PyEval_InitThreads();
     }
 
-    (void) Py_InitModule("openssl_thread_config", SpamMethods);
+    (void) Py_InitModule("openssl_thread_config", threadConfigs);
 }
