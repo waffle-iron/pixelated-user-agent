@@ -144,7 +144,7 @@ CRYPTO_READ=4
 CRYPTO_WRITE=8
 
 
-def idfunc():
+def get_thread_id():
     id = current_thread().ident
     print 'sent thread id:  %d' % id
     print type(id)
@@ -153,7 +153,7 @@ def idfunc():
 locks = [Lock() for i in range(1, 500)]
 
 
-def lockfunc(mode, n, file, line):
+def openssl_thread_locking(mode, n, file, line):
     print 'mode: %d and n %d' % (mode, n)
     if mode & CRYPTO_LOCK == CRYPTO_LOCK:
         print "acquire lock %d" % n
@@ -166,7 +166,7 @@ def lockfunc(mode, n, file, line):
 
 
 def initialize():
-    openssl_thread_config.enable_mutexes(idfunc, lockfunc)
+    openssl_thread_config.enable_mutexes(get_thread_id, openssl_thread_locking)
 
     log.info('Starting the Pixelated user agent')
     args = arguments.parse_user_agent_args()
