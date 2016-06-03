@@ -97,10 +97,10 @@ static PyMethodDef SpamMethods[] = {
 };
 
 
-PyMODINIT_FUNC initfoobar(void) {
+PyMODINIT_FUNC initopenssl_thread_config(void) {
     if (! PyEval_ThreadsInitialized()) {
         PyEval_InitThreads();
     }
 
-    (void) Py_InitModule("foobar", SpamMethods);
+    (void) Py_InitModule("openssl_thread_config", SpamMethods);
 }

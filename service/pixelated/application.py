@@ -38,7 +38,7 @@ from pixelated.resources.root_resource import RootResource
 
 log = logging.getLogger(__name__)
 
-from threading import RLock as Lock
+from multiprocessing import Lock # BoundedSemaphore as Lock
 from threading import current_thread
 import foobar
 
@@ -150,7 +150,7 @@ def idfunc():
     print type(id)
     return int(id)
 
-locks = [Lock() for i in range(1, 50)]
+locks = [Lock() for i in range(1, 500)]
 
 
 def lockfunc(mode, n, file, line):
