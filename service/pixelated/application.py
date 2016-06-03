@@ -40,7 +40,7 @@ log = logging.getLogger(__name__)
 
 from multiprocessing import Lock # BoundedSemaphore as Lock
 from threading import current_thread
-import foobar
+import openssl_thread_config
 
 
 class ServicesFactory(object):
@@ -166,7 +166,7 @@ def lockfunc(mode, n, file, line):
 
 
 def initialize():
-    foobar.enable_mutexes(idfunc, lockfunc)
+    openssl_thread_config.enable_mutexes(idfunc, lockfunc)
 
     log.info('Starting the Pixelated user agent')
     args = arguments.parse_user_agent_args()
