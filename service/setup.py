@@ -58,4 +58,4 @@ setup(name='pixelated-user-agent',
       },
       include_package_data=True,
       ext_modules=[
-          Extension("openssl_thread_config", ["extension/extension.c"], libraries=["crypto"])])
+          Extension("openssl_thread_config", ["pixelated/extensions/openssl_thread_config.c"], libraries=["crypto"])])
