@@ -124,54 +124,29 @@ define(
       };
 
       this.checkSigned = function(mail) {
-        var statusNotSigned = {
-          cssClass: 'security-status__label--not-signed',
-          label: 'not-signed'
-        };
-
-        if(_.isEmpty(mail.security_casing.imprints)) {
-          return statusNotSigned;
+        if (this.isNotSigned(mail)) {
+          return {
+            cssClass: 'security-status__label--not-signed',
+            label: 'not-signed'
+          };
         }
 
-        var hasNoSignatureInformation = _.any(mail.security_casing.imprints, function (imprint) {
-          return imprint.state === 'no_signature_information';
-        });
-
-        if(hasNoSignatureInformation) {
-          return statusNotSigned;
-        }
-
-        var statusClass = ['security-status__label--signed'];
-        var statusLabel = ['signed'];
-
-        if(_.any(mail.security_casing.imprints, function(imprint) { return imprint.state === 'from_revoked'; })) {
-          statusClass.push('--revoked');
-          statusLabel.push('signature-revoked');
-        }
-
-        if(_.any(mail.security_casing.imprints, function(imprint) { return imprint.state === 'from_expired'; })) {
-          statusClass.push('--expired');
-          statusLabel.push('signature-expired');
-        }
-
-        if(this.isNotTrusted(mail)) {
-          statusClass.push('--not-trusted');
-          statusLabel.push('signature-not-trusted');
+        if (_.isEmpty(mail.security_casing.imprints)){
+          return {
+            cssClass: 'security-status__label--signed--not-trusted',
+            label: 'signed signature-not-trusted'
+          };
         }
 
         return {
-          cssClass: statusClass.join(''),
-          label: statusLabel.join(' ')
+          cssClass: 'security-status__label--signed',
+          label: 'signed'
         };
       };
 
-      this.isNotTrusted = function(mail){
-        return _.any(mail.security_casing.imprints, function(imprint) {
-          if(_.isNull(imprint.seal)){
-            return true;
-          }
-          var currentTrust = _.isUndefined(imprint.seal.trust) ? imprint.seal.validity : imprint.seal.trust;
-          return currentTrust === 'no_trust';
+      this.isNotSigned = function(mail){
+        return _.any(mail.security_casing.imprints, function(imprint){
+          return imprint.state === 'no_signature_information';
         });
       };
 

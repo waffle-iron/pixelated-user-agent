@@ -98,13 +98,13 @@ class LeapMail(Mail):
 
     def _signature_information(self):
         signature = self.headers.get("X-Leap-Signature", None)
+        print '*' * 50
+        print signature 
         if signature is None or signature.startswith("could not verify"):
             return [{"state": "no_signature_information"}]
-        else:
-            if signature.startswith("valid"):
-                return [{"state": "valid", "seal": {"validity": "valid"}}]
-            else:
-                return []
+        if signature.startswith("valid"):
+            return [{"state": "valid", "seal": {"validity": "valid"}}]
+        return []
 
     @property
     def raw(self):
