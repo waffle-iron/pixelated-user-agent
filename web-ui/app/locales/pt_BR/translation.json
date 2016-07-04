@@ -37,7 +37,7 @@
     "encrypted": "Criptografado",
     "not-encrypted": "Não criptografado",
     "signed": "Rementente verificado",
-    "not-signed": "Não assinado",
+    "not-signed": "Remetente não identificado",
     "sending-mail": "Enviando...",
     "trash-button": "Deletar",
     "search-placeholder" : "Pesquisar...",
