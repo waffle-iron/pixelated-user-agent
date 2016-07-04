@@ -134,7 +134,7 @@ define(
         if (_.isEmpty(mail.security_casing.imprints)){
           return {
             cssClass: 'security-status__label--signed--not-trusted',
-            label: 'signed signature-not-trusted'
+            label: 'signed-and-not-trusted'
           };
         }
 
