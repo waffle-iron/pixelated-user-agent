@@ -39,14 +39,6 @@
         content: "\f00c";
       }
 
-      &--revoked, &--expired {
-        background: $attention;
-
-        &:before {
-          content: "\f05e";
-        }
-      }
-
       &--not-trusted {
         background: $error;
 
