@@ -107,6 +107,7 @@ def impl(context):
     assert cc is not None
     assert bcc is not None
 
+
 @given('I have a signed mail in my inbox')
 def add_signed_mail(context):
     subject = 'Hi! This the subject %s' % uuid4()
@@ -120,6 +121,7 @@ def build_signed_mail(subject):
     mail["X-Leap-Signature"] = "valid"
     return mail
 
+
 @wait_for(timeout=10.0)
 def load_mail_into_soledad(context, mail):
     return context.client.mail_store.add_mail('INBOX', mail.as_string())
@@ -129,4 +131,4 @@ def load_mail_into_soledad(context, mail):
 def check_signed_mail(context):
     signature_label = find_elements_by_css_selector(context, '.security-status__label--signed')
 
-    assert "Verified sender" ==  signature_label[0].text
+    assert "Verified sender" == signature_label[0].text
