@@ -13,7 +13,11 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with Pixelated. If not, see <http://www.gnu.org/licenses/>.
+from email.MIMEMultipart import MIMEMultipart
+from email.mime.text import MIMEText
+from uuid import uuid4
 from selenium.webdriver.common.keys import Keys
+from crochet import wait_for
 from common import *
 
 
@@ -102,3 +106,27 @@ def impl(context):
 
     assert cc is not None
     assert bcc is not None
+
+@given('I have a signed mail in my inbox')
+def add_signed_mail(context):
+    subject = 'Hi! This the subject %s' % uuid4()
+    mail = build_signed_mail(subject)
+    load_mail_into_soledad(context, mail)
+
+
+def build_signed_mail(subject):
+    mail = MIMEMultipart()
+    mail['Subject'] = subject
+    mail["X-Leap-Signature"] = "valid"
+    return mail
+
+@wait_for(timeout=10.0)
+def load_mail_into_soledad(context, mail):
+    return context.client.mail_store.add_mail('INBOX', mail.as_string())
+
+
+@then('I see the signed label')
+def check_signed_mail(context):
+    signature_label = find_elements_by_css_selector(context, '.security-status__label--signed')
+
+    assert "Verified sender" ==  signature_label[0].text
