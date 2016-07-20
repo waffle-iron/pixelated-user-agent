@@ -124,29 +124,17 @@ define(
       };
 
       this.checkSigned = function(mail) {
-        if (this.isNotSigned(mail)) {
+        if (this.isSigned(mail)) {
           return {
-            cssClass: 'security-status__label--not-signed',
-            label: 'not-signed'
+            cssClass: 'security-status__label--signed',
+            label: 'signed'
           };
         }
-
-        if (_.isEmpty(mail.security_casing.imprints)){
-          return {
-            cssClass: 'security-status__label--signed--not-trusted',
-            label: 'signed-and-not-trusted'
-          };
-        }
-
-        return {
-          cssClass: 'security-status__label--signed',
-          label: 'signed'
-        };
       };
 
-      this.isNotSigned = function(mail){
+      this.isSigned = function(mail){
         return _.any(mail.security_casing.imprints, function(imprint){
-          return imprint.state === 'no_signature_information';
+          return imprint.state === 'valid';
         });
       };
 

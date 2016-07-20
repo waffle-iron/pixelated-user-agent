@@ -38,22 +38,6 @@
       &:before {
         content: "\f00c";
       }
-
-      &--not-trusted {
-        background: $error;
-
-        &:before {
-          content: "\f05e";
-        }
-      }
-    }
-
-    &--not-signed {
-      background: $attention;
-
-      &:before {
-        content: "\f05e";
-      }
     }
   }
 }

@@ -149,19 +149,10 @@ describeComponent('mail_view/ui/mail_view', function () {
     expect(this.component.checkSigned(email).label).toEqual('signed');
   });
 
-  it('assumes that the mail is not signed if imprint state is no_signature_information', function() {
-    var email = testData;
-    email.security_casing = {imprints: [{state: 'no_signature_information'}]};
-    expect(this.component.checkSigned(email).cssClass).toEqual('security-status__label--not-signed');
-    expect(this.component.checkSigned(email).label).toEqual('not-signed');
-
-  });
-
-  it('assumes that the mail is signed but not trusted if imprint is empty', function() {
+  it('assumes that the mail is not signed if imprints is empty', function() {
     var email = testData;
     email.security_casing = {imprints: []};
-    expect(this.component.checkSigned(email).cssClass).toEqual('security-status__label--signed--not-trusted');
-    expect(this.component.checkSigned(email).label).toEqual('signed signature-not-trusted');
+    expect(this.component.checkSigned(email)).toEqual(undefined);
   });
 
   it('creates new tag when pressing Enter key on new tag input', function(){

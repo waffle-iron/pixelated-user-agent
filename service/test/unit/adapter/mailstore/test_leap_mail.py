@@ -65,7 +65,7 @@ class TestLeapMail(TestCase):
             'body': None,
             'textPlainBody': None,
             'security_casing': {
-                'imprints': [{'state': 'no_signature_information'}],
+                'imprints': [],
                 'locks': []
             },
             'attachments': []
@@ -126,7 +126,7 @@ class TestLeapMail(TestCase):
     def test_security_casing(self):
         # No Encryption, no Signature
         mail = LeapMail('id', 'INBOX', {})
-        self.assertEqual({'locks': [], 'imprints': [{'state': 'no_signature_information'}]}, mail.security_casing)
+        self.assertEqual({'locks': [], 'imprints': []}, mail.security_casing)
 
         # Encryption
         mail = LeapMail('id', 'INBOX', {'X-Leap-Encryption': 'decrypted'})
