@@ -37,27 +37,19 @@ def initialize_leap_multi_user(provider_hostname,
     defer.returnValue((config, provider))
 
 
-def _create_session(provider, username, password, auth):
-    return LeapSessionFactory(provider).create(username, password, auth)
-
-
-def _force_close_session(session):
-    try:
-        session.close()
-    except Exception, e:
-        log.error(e)
-
-
 @defer.inlineCallbacks
 def authenticate_user(provider, username, password, initial_sync=True, auth=None):
-    leap_session = _create_session(provider, username, password, auth)
+    leap_session = LeapSessionFactory(provider).create(username, password, auth)
     try:
         if initial_sync:
             yield leap_session.initial_sync()
     except InvalidAuthTokenError:
-        _force_close_session(leap_session)
+        try:
+            leap_session.close()
+        except Exception, e:
+            log.error(e)
 
-        leap_session = _create_session(provider, username, password, auth)
+        leap_session = LeapSessionFactory(provider).create(username, password, auth)
         if initial_sync:
             yield leap_session.initial_sync()
 

@@ -47,20 +47,21 @@ class LeapPasswordChecker(object):
     def __init__(self, leap_provider):
         self._leap_provider = leap_provider
 
+    @defer.inlineCallbacks
     def requestAvatarId(self, credentials):
-        def _validate_credentials():
-            try:
-                srp_auth = SRPAuth(self._leap_provider.api_uri, self._leap_provider.local_ca_crt)
-                return srp_auth.authenticate(credentials.username, credentials.password)
-            except SRPAuthenticationError:
-                raise UnauthorizedLogin()
+        try:
+            authenticator = SRPAuth(self._leap_provider.api_uri, self._leap_provider.local_ca_crt)
+            authentication = yield threads.deferToThread(authenticator.authenticate,
+                                                         credentials.username,
+                                                         credentials.password)
+        except SRPAuthenticationError:
+            raise UnauthorizedLogin()
 
-        def _get_leap_session(srp_auth):
-            return authenticate_user(self._leap_provider, credentials.username, credentials.password, auth=srp_auth)
-
-        d = threads.deferToThread(_validate_credentials)
-        d.addCallback(_get_leap_session)
-        return d
+        leap_session = yield authenticate_user(self._leap_provider,
+                                               credentials.username,
+                                               credentials.password,
+                                               auth=authentication)
+        defer.returnValue(leap_session)
 
 
 class ISessionCredential(ICredentials):
