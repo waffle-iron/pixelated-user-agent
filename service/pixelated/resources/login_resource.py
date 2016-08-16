@@ -31,6 +31,7 @@ from pixelated.resources import handle_error_deferred
 from pixelated.adapter.welcome_mail import add_welcome_mail
 from pixelated.resources import BaseResource, UnAuthorizedResource, IPixelatedSession
 from pixelated.support.clock import Clock
+import datetime
 
 log = logging.getLogger(__name__)
 
@@ -138,6 +139,7 @@ class LoginResource(BaseResource):
             t.stop(leap_session.fresh_account)
             tl.stop()
             request.finish()
+            #import pdb; pdb.set_trace()
             self._setup_user_services(leap_session, request)
 
         def render_error(error):

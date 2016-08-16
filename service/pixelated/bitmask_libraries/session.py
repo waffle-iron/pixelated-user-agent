@@ -30,7 +30,7 @@ from .nicknym import NickNym
 from .smtp import LeapSMTPConfig
 from .soledad import SoledadFactory
 import leap.common.certs as leap_certs
-from pixelated.support.clock import Clock
+from pixelated.support.clock import Clock, clock
 
 from leap.common.events import (
     register, unregister,
@@ -39,12 +39,10 @@ from leap.common.events import (
 from datetime import datetime
 from os.path import expanduser
 
-
 log = logging.getLogger(__name__)
 
 
 class LeapSession(object):
-
     def __init__(self, provider, user_auth, mail_store, soledad, nicknym, smtp_config):
         self.smtp_config = smtp_config
         self.config = provider.config
@@ -131,9 +129,9 @@ class LeapSession(object):
     def _create_incoming_mail_fetcher(self, nicknym, soledad, account, user_mail):
         inbox = yield account.callWhenReady(lambda _: account.get_collection_by_mailbox('INBOX'))
         defer.returnValue(IncomingMail(nicknym.keymanager,
-                          soledad,
-                          inbox,
-                          user_mail))
+                                       soledad,
+                                       inbox,
+                                       user_mail))
 
     def stop_background_jobs(self):
         if self.incoming_mail_fetcher:
@@ -144,10 +142,12 @@ class LeapSession(object):
         try:
             t = Clock('session-sync', self.user_auth.uuid)
             soledad_sync = self.soledad.sync()
+
             def _after(param):
                 t.stop()
                 return param
-            soledad_sync.addCallbacks(_after,_after)
+
+            soledad_sync.addCallbacks(_after, _after)
             return soledad_sync
         except:
             traceback.print_exc(file=sys.stderr)
@@ -189,7 +189,6 @@ class SmtpClientCertificate(object):
 
 
 class SmtpCertDownloader(object):
-
     def __init__(self, provider, auth):
         self._provider = provider
         self._auth = auth
@@ -238,28 +237,41 @@ class LeapSessionFactory(object):
         return srp_auth.authenticate(username, password)
 
     def _create_new_session(self, username, password, auth=None):
-        self._create_dir(self._provider.config.leap_home)
-        self._provider.download_certificate()
+        with clock('haha!!! create leap dir'):
+            self._create_dir(self._provider.config.leap_home)
 
-        auth = auth or self._auth_leap(username, password)
-        account_email = self._provider.address_for(username)
+        with clock('haha!!! download certificate'):
+            self._provider.download_certificate()
 
-        self._create_database_dir(auth.uuid)
+        with clock('haha!!! auth and account email'):
+            auth = auth or self._auth_leap(username, password)
+            account_email = self._provider.address_for(username)
 
-        soledad = SoledadFactory.create(auth.token,
-                                        auth.uuid,
-                                        password,
-                                        self._secrets_path(auth.uuid),
-                                        self._local_db_path(auth.uuid),
-                                        self._provider.discover_soledad_server(auth.uuid),
-                                        LeapCertificate(self._provider).provider_api_cert)
+        with clock('haha!!! create database dir'):
+            self._create_database_dir(auth.uuid)
 
-        mail_store = LeapMailStore(soledad)
-        nicknym = self._create_nicknym(account_email, auth.token, auth.uuid, soledad)
+        with clock('haha!!! create soledad'):
+            soledad = SoledadFactory.create(auth.token,
+                                            auth.uuid,
+                                            password,
+                                            self._secrets_path(auth.uuid),
+                                            self._local_db_path(auth.uuid),
+                                            self._provider.discover_soledad_server(auth.uuid),
+                                            LeapCertificate(self._provider).provider_api_cert)
+        with clock('haha!!! create leap mail store'):
+            mail_store = LeapMailStore(soledad)
 
-        smtp_client_cert = self._download_smtp_cert(auth)
-        smtp_host, smtp_port = self._provider.smtp_info()
-        smtp_config = LeapSMTPConfig(account_email, smtp_client_cert, smtp_host, smtp_port)
+        with clock('haha!!! create nicknym'):
+            nicknym = self._create_nicknym(account_email, auth.token, auth.uuid, soledad)
+
+        with clock('haha!!! download smtp cert'):
+            smtp_client_cert = self._download_smtp_cert(auth)
+
+        with clock('haha!!! download smtp info'):
+            smtp_host, smtp_port = self._provider.smtp_info()
+
+        with clock('haha!!! create smtpinfo'):
+            smtp_config = LeapSMTPConfig(account_email, smtp_client_cert, smtp_host, smtp_port)
 
         return LeapSession(self._provider, auth, mail_store, soledad, nicknym, smtp_config)
 
@@ -302,7 +314,6 @@ class LeapSessionFactory(object):
 
 
 class SessionCache(object):
-
     sessions = {}
 
     @staticmethod
