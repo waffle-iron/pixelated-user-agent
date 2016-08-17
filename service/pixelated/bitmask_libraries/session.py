@@ -20,7 +20,7 @@ import os
 import requests
 import logging
 
-from twisted.internet import reactor, defer
+from twisted.internet import reactor, defer, threads
 from pixelated.bitmask_libraries.certs import LeapCertificate
 from pixelated.adapter.mailstore import LeapMailStore
 from leap.mail.incoming.service import IncomingMail
@@ -223,14 +223,15 @@ class LeapSessionFactory(object):
         self._provider = provider
         self._config = provider.config
 
+    @defer.inlineCallbacks
     def create(self, username, password, auth=None):
         key = SessionCache.session_key(self._provider, username)
         session = SessionCache.lookup_session(key)
         if not session:
-            session = self._create_new_session(username, password, auth)
+            session = yield self._create_new_session(username, password, auth)
             SessionCache.remember_session(key, session)
 
-        return session
+        defer.returnValue(session)
 
     def _auth_leap(self, username, password):
         srp_auth = SRPAuth(self._provider.api_uri, self._provider.local_ca_crt)
@@ -250,30 +251,38 @@ class LeapSessionFactory(object):
         with clock('haha!!! create database dir'):
             self._create_database_dir(auth.uuid)
 
-        with clock('haha!!! create soledad'):
-            soledad = SoledadFactory.create(auth.token,
-                                            auth.uuid,
-                                            password,
-                                            self._secrets_path(auth.uuid),
-                                            self._local_db_path(auth.uuid),
-                                            self._provider.discover_soledad_server(auth.uuid),
-                                            LeapCertificate(self._provider).provider_api_cert)
-        with clock('haha!!! create leap mail store'):
-            mail_store = LeapMailStore(soledad)
+        def instantiate_soledad():
+            with clock('haha!!! create soledad'):
+                soledad = SoledadFactory.create(auth.token,
+                                                auth.uuid,
+                                                password,
+                                                self._secrets_path(auth.uuid),
+                                                self._local_db_path(auth.uuid),
+                                                self._provider.discover_soledad_server(auth.uuid),
+                                                LeapCertificate(self._provider).provider_api_cert)
+            return soledad
 
-        with clock('haha!!! create nicknym'):
-            nicknym = self._create_nicknym(account_email, auth.token, auth.uuid, soledad)
+        def do_the_rest_on_main_thread(soledad):
+            with clock('haha!!! create leap mail store'):
+                mail_store = LeapMailStore(soledad)
 
-        with clock('haha!!! download smtp cert'):
-            smtp_client_cert = self._download_smtp_cert(auth)
+            with clock('haha!!! create nicknym'):
+                nicknym = self._create_nicknym(account_email, auth.token, auth.uuid, soledad)
 
-        with clock('haha!!! download smtp info'):
-            smtp_host, smtp_port = self._provider.smtp_info()
+            with clock('haha!!! download smtp cert'):
+                smtp_client_cert = self._download_smtp_cert(auth)
 
-        with clock('haha!!! create smtpinfo'):
-            smtp_config = LeapSMTPConfig(account_email, smtp_client_cert, smtp_host, smtp_port)
+            with clock('haha!!! download smtp info'):
+                smtp_host, smtp_port = self._provider.smtp_info()
 
-        return LeapSession(self._provider, auth, mail_store, soledad, nicknym, smtp_config)
+            with clock('haha!!! create smtpinfo'):
+                smtp_config = LeapSMTPConfig(account_email, smtp_client_cert, smtp_host, smtp_port)
+
+            return LeapSession(self._provider, auth, mail_store, soledad, nicknym, smtp_config)
+
+        d = threads.deferToThread(instantiate_soledad)
+        d.addCallback(do_the_rest_on_main_thread)
+        return d
 
     def _download_smtp_cert(self, auth):
         cert = SmtpClientCertificate(self._provider, auth, self._user_path(auth.uuid))

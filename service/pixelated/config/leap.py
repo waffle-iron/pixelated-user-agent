@@ -40,12 +40,12 @@ def initialize_leap_multi_user(provider_hostname,
 
     defer.returnValue((config, provider))
 
-
+@defer.inlineCallbacks
 def _create_session(provider, username, password, auth):
     t = Clock('create-session-factory', auth.uuid)
-    leap_session = LeapSessionFactory(provider).create(username, password, auth)
+    leap_session = yield LeapSessionFactory(provider).create(username, password, auth)
     t.stop()
-    return leap_session
+    defer.returnValue(leap_session)
 
 
 def _force_close_session(session):
@@ -57,7 +57,7 @@ def _force_close_session(session):
 
 @defer.inlineCallbacks
 def authenticate_user(provider, username, password, initial_sync=True, auth=None):
-    leap_session = _create_session(provider, username, password, auth)
+    leap_session = yield _create_session(provider, username, password, auth)
     try:
         if initial_sync:
             yield leap_session.initial_sync()
