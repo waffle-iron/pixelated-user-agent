@@ -18,7 +18,8 @@ class TestLoginResource(unittest.TestCase):
     def setUp(self):
         self.services_factory = mock()
         self.portal = mock()
-        self.resource = LoginResource(self.services_factory, self.portal)
+        self.provider = mock()
+        self.resource = LoginResource(self.services_factory, self.provider, self.portal)
         self.web = DummySite(self.resource)
 
     def test_children_resources_are_unauthorized_when_not_logged_in(self):
@@ -145,7 +146,7 @@ class TestLoginPOST(unittest.TestCase):
         self.services_factory = mock()
         self.portal = mock()
         self.provider = mock()
-        self.resource = LoginResource(self.services_factory, self.portal)
+        self.resource = LoginResource(self.services_factory, self.provider, self.portal)
         self.web = DummySite(self.resource)
 
         self.request = DummyRequest([''])
@@ -170,69 +171,32 @@ class TestLoginPOST(unittest.TestCase):
     def mock_user_has_services_setup(self):
         when(self.services_factory).has_session('some_user_uuid').thenReturn(True)
 
-    def test_login_responds_interstitial_and_add_corresponding_session_to_services_factory(self):
+    def test_login_responds_interstitial(self):
         irrelevant = None
-        when(self.portal).login(ANY(), None, IResource).thenReturn((irrelevant, self.leap_session, irrelevant))
-        when(self.services_factory).create_services_from(self.leap_session).thenAnswer(self.mock_user_has_services_setup)
+        when(self.portal).login(ANY(), None, IResource).thenReturn((irrelevant, self.user_auth, irrelevant))
+        when(self.resource).setup_leap_session(ANY(), ANY()).thenReturn('anything')
+        when(self.resource).setup_services(ANY(), ANY()).thenReturn('anything')
 
         d = self.web.get(self.request)
 
-        def assert_login_setup_service_for_user(_):
+        def assert_login_setup_interstitial(_):
             verify(self.portal).login(ANY(), None, IResource)
-            verify(self.services_factory).create_services_from(self.leap_session)
-            verify(self.services_factory).map_email('ayoyo', 'some_user_uuid')
             interstitial_js_in_template = '<script src="startup-assets/Interstitial.js"></script>'
             self.assertIn(interstitial_js_in_template, self.request.written[0])
-            self.assertTrue(self.resource.is_logged_in(self.request))
 
-        d.addCallback(assert_login_setup_service_for_user)
-        return d
-
-    def test_login_does_not_reload_services_if_already_loaded(self):
-        irrelevant = None
-        when(self.portal).login(ANY(), None, IResource).thenReturn((irrelevant, self.leap_session, irrelevant))
-        when(self.services_factory).has_session('some_user_uuid').thenReturn(True)
-
-        d = self.web.get(self.request)
-
-        def assert_login_setup_service_for_user(_):
-            verify(self.portal).login(ANY(), None, IResource)
-            verify(self.services_factory).has_session('some_user_uuid')
-            verifyNoMoreInteractions(self.services_factory)
-            interstitial_js_in_template = '<script src="startup-assets/Interstitial.js"></script>'
-            self.assertIn(interstitial_js_in_template, self.request.written[0])
-            self.assertTrue(self.resource.is_logged_in(self.request))
-
-        d.addCallback(assert_login_setup_service_for_user)
+        d.addCallback(assert_login_setup_interstitial)
         return d
 
     def test_should_return_form_back_with_error_message_when_login_fails(self):
-        when(self.portal).login(ANY(), None, IResource).thenRaise(Exception())
+        when(self.portal).login(ANY(), None, IResource).thenRaise(StandardError('error'))
+        when(self.resource).setup_leap_session(ANY(), ANY()).thenReturn('anything')
+        when(self.resource).setup_services(ANY(), ANY()).thenReturn('anything')
         d = self.web.get(self.request)
 
         def assert_login_setup_service_for_user(_):
             verify(self.portal).login(ANY(), None, IResource)
             self.assertEqual(401, self.request.responseCode)
             written_response = ''.join(self.request.written)
-            self.assertIn('Invalid credentials', written_response)
-            self.assertFalse(self.resource.is_logged_in(self.request))
-
-        d.addCallback(assert_login_setup_service_for_user)
-        return d
-
-    @patch('pixelated.bitmask_libraries.session.LeapSessionFactory.create')
-    @patch('leap.auth.SRPAuth.authenticate')
-    @patch('pixelated.config.services.Services.setup')
-    def test_leap_session_is_not_created_when_leap_auth_fails(self, mock_service_setup, mock_leap_srp_auth, mock_leap_session_create):
-        mock_leap_srp_auth.side_effect = SRPAuthenticationError()
-
-        d = self.web.get(self.request)
-
-        def assert_login_setup_service_for_user(_):
-            verify(self.portal).login(ANY(), None, IResource)
-            self.assertFalse(mock_leap_session_create.called)
-            self.assertFalse(mock_service_setup.called)
-            self.assertEqual(401, self.request.responseCode)
             self.assertFalse(self.resource.is_logged_in(self.request))
 
         d.addCallback(assert_login_setup_service_for_user)

@@ -80,7 +80,7 @@ class RootResource(BaseResource):
         csrf_input = request.args.get('csrftoken', [None])[0] or json.loads(request.content.read()).get('csrftoken', [None])[0]
         return csrf_input and csrf_input == xsrf_token
 
-    def initialize(self, portal=None, disclaimer_banner=None):
+    def initialize(self, provider, portal=None, disclaimer_banner=None):
         self._child_resources.add('sandbox', SandboxResource(self._static_folder))
         self._child_resources.add('assets', File(self._static_folder))
         self._child_resources.add('keys', KeysResource(self._services_factory))
@@ -94,7 +94,7 @@ class RootResource(BaseResource):
         self._child_resources.add('user-settings', UserSettingsResource(self._services_factory))
         self._child_resources.add('users', UsersResource(self._services_factory))
         self._child_resources.add(LoginResource.BASE_URL,
-                                  LoginResource(self._services_factory, portal, disclaimer_banner=disclaimer_banner))
+                                  LoginResource(self._services_factory, provider, portal, disclaimer_banner=disclaimer_banner))
         self._child_resources.add(LogoutResource.BASE_URL, LogoutResource(self._services_factory))
 
         self._mode = MODE_RUNNING

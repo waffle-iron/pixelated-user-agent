@@ -138,7 +138,7 @@ class StubSRPChecker(object):
 
     def requestAvatarId(self, credentials):
         leap_auth = SRPSession(credentials.username, uuid.uuid4(), uuid.uuid4(), uuid.uuid4(), {})
-        return defer.succeed(LeapSession(self._leap_provider, leap_auth, None, None, None, None))
+        return defer.succeed(leap_auth)
 
 
 class StubServicesFactory(ServicesFactory):
@@ -186,6 +186,8 @@ class AppTestClient(object):
         self.feedback_service = self._test_account.feedback_service
         self.mail_service = self._test_account.mail_service
         self.account = self._test_account.account
+        provider = mock()
+        provider.config = LeapConfig(self._tmp_dir.name)
 
         if mode.is_single_user:
             self.service_factory = SingleUserServicesFactory(mode)
@@ -193,12 +195,9 @@ class AppTestClient(object):
             self.service_factory.add_session('someuserid', services)
 
             self.resource = RootResource(self.service_factory)
-            self.resource.initialize()
+            self.resource.initialize(provider)
         else:
             self.service_factory = StubServicesFactory(self.accounts, mode)
-            provider = mock()
-            provider.config = LeapConfig(self._tmp_dir.name)
-
             self.resource = set_up_protected_resources(RootResource(self.service_factory), provider, self.service_factory, checker=StubSRPChecker(provider))
 
     @defer.inlineCallbacks

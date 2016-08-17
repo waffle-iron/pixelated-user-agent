@@ -19,7 +19,7 @@ import os
 from xml.sax import SAXParseException
 
 from twisted.cred import credentials
-from twisted.internet import defer
+from twisted.internet import defer, reactor
 from twisted.python.filepath import FilePath
 from twisted.web import util
 from twisted.web.http import UNAUTHORIZED, OK
@@ -30,6 +30,7 @@ from twisted.web.template import Element, XMLFile, renderElement, renderer
 from pixelated.resources import handle_error_deferred
 from pixelated.adapter.welcome_mail import add_welcome_mail
 from pixelated.resources import BaseResource, UnAuthorizedResource, IPixelatedSession
+from pixelated.config.leap import create_leap_session
 
 log = logging.getLogger(__name__)
 
@@ -95,11 +96,12 @@ class LoginWebSite(Element):
 class LoginResource(BaseResource):
     BASE_URL = 'login'
 
-    def __init__(self, services_factory, portal=None, disclaimer_banner=None):
+    def __init__(self, services_factory, provider, portal=None, disclaimer_banner=None):
         BaseResource.__init__(self, services_factory)
         self._static_folder = _get_static_folder()
         self._startup_folder = _get_startup_folder()
         self._portal = portal
+        self._provider = provider
         self._disclaimer_banner = disclaimer_banner
         self.putChild('startup-assets', File(self._startup_folder))
 
@@ -123,24 +125,33 @@ class LoginResource(BaseResource):
         site = LoginWebSite(error_msg=error_msg, disclaimer_banner_file=self._disclaimer_banner)
         return renderElement(request, site)
 
+    def setup_leap_session(self, auth, request):
+        if auth:
+            return create_leap_session(self._provider, auth.username, request.args['password'][0], auth=auth)
+
+    def setup_services(self, leap_session, request):
+        if leap_session:
+            self._setup_user_services(leap_session, request)
+
     def render_POST(self, request):
         if self.is_logged_in(request):
             return util.redirectTo("/", request)
 
-        def render_response(leap_session):
+        def render_loading(auth):
             request.setResponseCode(OK)
             request.write(open(os.path.join(self._startup_folder, 'Interstitial.html')).read())
             request.finish()
-            self._setup_user_services(leap_session, request)
+            return auth
 
-        def render_error(error):
-            log.info('Login Error for %s' % request.args['username'][0])
-            log.info('%s' % error)
+        def render_login_error(error):
+            log.info('%s' % error.getErrorMessage())
             request.setResponseCode(UNAUTHORIZED)
-            return self._render_template(request, 'Invalid credentials')
+            self._render_template(request, error.getErrorMessage())
 
         d = self._handle_login(request)
-        d.addCallbacks(render_response, render_error)
+        d.addCallbacks(render_loading, render_login_error)
+        d.addCallback(self.setup_leap_session, request)
+        d.addCallback(self.setup_services, request)
         d.addErrback(handle_error_deferred, request)
 
         return NOT_DONE_YET
@@ -148,8 +159,8 @@ class LoginResource(BaseResource):
     @defer.inlineCallbacks
     def _handle_login(self, request):
         self.creds = self._get_creds_from(request)
-        iface, leap_session, logout = yield self._portal.login(self.creds, None, IResource)
-        defer.returnValue(leap_session)
+        iface, auth, logout = yield self._portal.login(self.creds, None, IResource)
+        defer.returnValue(auth)
 
     def _get_creds_from(self, request):
         username = request.args['username'][0]

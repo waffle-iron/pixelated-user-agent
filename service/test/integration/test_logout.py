@@ -39,5 +39,5 @@ class MultiUserLogoutTest(MultiUserClient, SoledadTestBase):
                                       from_request=login_request, as_json=False)
         yield response
 
-        self.assertEqual(302, request.responseCode)     # redirected
+        self.assertEqual(401, request.responseCode)
         verify(self.services).close()

@@ -2,7 +2,7 @@ from leap.soledad.common.errors import InvalidAuthTokenError
 from mock import MagicMock, patch
 from twisted.trial import unittest
 from twisted.internet import defer
-from pixelated.config.leap import authenticate_user
+from pixelated.config.leap import create_leap_session
 
 
 class TestAuth(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestAuth(unittest.TestCase):
 
         session_factory_mock.create.return_value = session
 
-        yield authenticate_user(provider_mock, 'username', 'password', auth=auth_mock)
+        yield create_leap_session(provider_mock, 'username', 'password', auth=auth_mock)
 
         session.initial_sync.assert_called_with()
 
@@ -32,7 +32,7 @@ class TestAuth(unittest.TestCase):
         session.initial_sync.side_effect = [InvalidAuthTokenError, defer.succeed(None)]
         session_factory_mock.create.return_value = session
 
-        yield authenticate_user(provider_mock, 'username', 'password', auth=auth_mock)
+        yield create_leap_session(provider_mock, 'username', 'password', auth=auth_mock)
 
         session.close.assert_called_with()
         self.assertEqual(2, session.initial_sync.call_count)

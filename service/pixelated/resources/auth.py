@@ -31,7 +31,6 @@ from twisted.web import util
 from twisted.cred import error
 from twisted.web.resource import IResource, ErrorPage
 
-from pixelated.config.leap import authenticate_user
 from pixelated.resources import IPixelatedSession
 
 
@@ -48,18 +47,14 @@ class LeapPasswordChecker(object):
         self._leap_provider = leap_provider
 
     def requestAvatarId(self, credentials):
-        def _validate_credentials():
-            try:
-                srp_auth = SRPAuth(self._leap_provider.api_uri, self._leap_provider.local_ca_crt)
-                return srp_auth.authenticate(credentials.username, credentials.password)
-            except SRPAuthenticationError:
-                raise UnauthorizedLogin()
+        srp_auth = SRPAuth(self._leap_provider.api_uri, self._leap_provider.local_ca_crt)
 
-        def _get_leap_session(srp_auth):
-            return authenticate_user(self._leap_provider, credentials.username, credentials.password, auth=srp_auth)
+        def handle_error(e):
+            log.error(e)
+            raise UnauthorizedLogin('Invalid credentials')
 
-        d = threads.deferToThread(_validate_credentials)
-        d.addCallback(_get_leap_session)
+        d = threads.deferToThread(srp_auth.authenticate, credentials.username, credentials.password)
+        d.addErrback(handle_error)
         return d
 
 
