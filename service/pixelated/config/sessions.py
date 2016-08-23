@@ -6,7 +6,7 @@ import requests
 import logging
 from twisted.internet import defer, threads, reactor
 from leap.soledad.common.crypto import WrongMacError, UnknownMacMethodError
-from leap.soledad.client import Soledad
+from leap.soledad.client.deferred import DeferredSoledad
 from pixelated.bitmask_libraries.keymanager import Keymanager
 from leap.mail.incoming.service import IncomingMail
 from leap.mail.mail import Account
@@ -69,7 +69,7 @@ class LeapSessionFactory(object):
         local_db = self._local_db_path(user_uuid)
         server_url = self._provider.discover_soledad_server(user_uuid)
         try:
-            soledad = yield threads.deferToThread(Soledad,
+            soledad = yield threads.deferToThread(DeferredSoledad,
                                                   user_uuid,
                                                   passphrase=unicode(password),
                                                   secrets_path=secrets,
@@ -79,6 +79,7 @@ class LeapSessionFactory(object):
                                                   shared_db=None,
                                                   auth_token=user_token,
                                                   defer_encryption=False)
+            yield soledad.defer_bootstrap()
             defer.returnValue(soledad)
         except (WrongMacError, UnknownMacMethodError), e:
             raise SoledadWrongPassphraseException(e)
