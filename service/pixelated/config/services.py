@@ -37,7 +37,7 @@ class Services(object):
         self.draft_service = self._setup_draft_service(self._leap_session.mail_store)
         self.feedback_service = self._setup_feedback_service()
 
-        yield self._index_all_mails()
+#        yield self._index_all_mails()
 
     def close(self):
         self._leap_session.close()

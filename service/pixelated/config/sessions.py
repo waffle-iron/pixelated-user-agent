@@ -37,7 +37,7 @@ class LeapSessionFactory(object):
             SessionCache.remember_session(key, session)
         defer.returnValue(session)
 
-    @defer.inlineCallbacks
+#    @defer.inlineCallbacks
     def _create_new_session(self, username, password, auth):
         account_email = self._provider.address_for(username)
 
@@ -45,19 +45,28 @@ class LeapSessionFactory(object):
 
         api_cert = LeapCertificate(self._provider).provider_api_cert
 
-        soledad = yield self.setup_soledad(auth.token, auth.uuid, password, api_cert)
+        soledad = self.setup_soledad(auth.token, auth.uuid, password, api_cert)
 
-        mail_store = LeapMailStore(soledad)
+        def setup_keym(_soledad):
+            keym = Keymanager(self._provider, _soledad, account_email, auth.token, auth.uuid)
+            result = _soledad, keym
+            return result
 
-        keymanager = yield self.setup_keymanager(self._provider, soledad, account_email, auth.token, auth.uuid)
+        def the_rest(sol_keym):
+            _soledad, keymanager = sol_keym
+            mail_store = LeapMailStore(_soledad)
+            smtp_client_cert = self._download_smtp_cert(auth)
+            smtp_host, smtp_port = self._provider.smtp_info()
+            smtp_config = LeapSMTPConfig(account_email, smtp_client_cert, smtp_host, smtp_port)
 
-        smtp_client_cert = self._download_smtp_cert(auth)
-        smtp_host, smtp_port = self._provider.smtp_info()
-        smtp_config = LeapSMTPConfig(account_email, smtp_client_cert, smtp_host, smtp_port)
+            leap_session = LeapSession(self._provider, auth, mail_store, _soledad, keymanager, smtp_config)
+            return leap_session
+    
+        soledad.addCallback(setup_keym) 
+        soledad.addCallback(the_rest) 
+        return soledad
 
-        leap_session = LeapSession(self._provider, auth, mail_store, soledad, keymanager, smtp_config)
-
-        defer.returnValue(leap_session)
+#        defer.returnValue(leap_session)
 
     @defer.inlineCallbacks
     def setup_soledad(self,
