@@ -52,18 +52,35 @@ class LeapSessionFactory(object):
             result = _soledad, keym
             return result
 
-        def the_rest(sol_keym):
-            _soledad, keymanager = sol_keym
+        def leapmail_store(sol_keym):
+            _soledad, keym = sol_keym
             mail_store = LeapMailStore(_soledad)
-            smtp_client_cert = self._download_smtp_cert(auth)
-            smtp_host, smtp_port = self._provider.smtp_info()
-            smtp_config = LeapSMTPConfig(account_email, smtp_client_cert, smtp_host, smtp_port)
+            return sol_keym + (mail_store,)
 
+        def _smtp_client_cert(result):
+            smtp_client_cert = self._download_smtp_cert(auth)
+            return result + (smtp_client_cert,)
+
+        def _smtp_info(result):
+            smtp_host, smtp_port = self._provider.smtp_info()
+            return result + (smtp_host, smtp_port)
+
+        def leap_smtp_config(result):
+            _soledad, keym, ms, smtp_client_cert, smtp_host, smtp_port = result
+            smtp_config = LeapSMTPConfig(account_email, smtp_client_cert, smtp_host, smtp_port)
+            return result + (smtp_config,)
+
+        def _leap_session(result):
+            _soledad, keymanager, mail_store, smtp_client_cert, smtp_host, smtp_port, smtp_config = result
             leap_session = LeapSession(self._provider, auth, mail_store, _soledad, keymanager, smtp_config)
             return leap_session
     
         soledad.addCallback(setup_keym) 
-        soledad.addCallback(the_rest) 
+        soledad.addCallback(leapmail_store) 
+        soledad.addCallback(_smtp_client_cert) 
+        soledad.addCallback(_smtp_info) 
+        soledad.addCallback(leap_smtp_config) 
+        soledad.addCallback(_leap_session) 
         return soledad
 
 #        defer.returnValue(leap_session)
